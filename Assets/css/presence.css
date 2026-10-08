@@ -1,0 +1,11 @@
+.presence-strip { display: inline-flex; gap: 4px; align-items: center; margin: 4px 0 0 8px; vertical-align: middle; }
+.presence-plate { position: relative; display: inline-block; border-radius: 50%; line-height: 0; }
+.presence-plate::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--presence-ring, #fff); }
+.presence-plate[data-presence="online"]::after { background: #2fb344; }
+.presence-plate[data-presence="away"]::after { background: #f2a01b; }
+.presence-plate[data-presence="offline"] { opacity: .45; }
+.presence-plate[data-presence="offline"]::after { background: #9aa0a6; }
+.presence-plate[data-self="1"] { outline: 2px solid currentColor; outline-offset: 1px; }
+.presence-bot { position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); font: 700 8px/1 sans-serif; padding: 1px 3px; border-radius: 3px; background: #333; color: #fff; }
+.presence-plate[data-presence="online"]::after { transition: background-color .3s; }
+@media (prefers-reduced-motion: reduce) { .presence-plate::after { transition: none; } }
