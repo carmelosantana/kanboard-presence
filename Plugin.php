@@ -7,6 +7,7 @@ class Plugin extends Base
 {
     public function initialize(): void
     {
+        $this->route->addRoute('presence/beat', 'HeartbeatController', 'beat', 'Presence');
         $this->api->getMiddlewareHandler()->withMiddleware(new Api\PresenceApiMiddleware($this->container));
     }
 
