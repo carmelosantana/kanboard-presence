@@ -11,6 +11,11 @@ class WebRecorder extends Base
     public function record(?int $now = null): bool
     {
         $now = $now ?? time();
+        // Queue workers (Core\Queue\JobHandler) log the job author in, flush the session and fire
+        // app.bootstrap under CLI; without a REQUEST_METHOD this is not a real web request.
+        if ($this->request->getServerVariable('REQUEST_METHOD') === '') {
+            return false;
+        }
         if (! $this->userSession->isLogged()) {
             return false;
         }

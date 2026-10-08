@@ -20,6 +20,12 @@ class WriteHooksTest extends Base
         $this->container['userSession']->initialize($this->container['userModel']->getById($uid));
     }
 
+    // Request falls back to superglobals for empty arrays, so pass non-empty ones.
+    private function setServer(array $server): void
+    {
+        $this->container['request'] = new \Kanboard\Core\Http\Request($this->container, $server, ['_' => '1'], ['_' => '1'], [], []);
+    }
+
     private function row(int $uid): ?array
     {
         return $this->container['db']->table('presence')->eq('user_id', $uid)->findOne() ?: null;
@@ -27,12 +33,14 @@ class WriteHooksTest extends Base
 
     public function testWebRecorderSkipsAnonymous(): void
     {
+        $this->setServer(['REQUEST_METHOD' => 'GET']);
         $this->assertFalse((new WebRecorder($this->container))->record(1000));
         $this->assertSame(0, $this->container['db']->table('presence')->count());
     }
 
     public function testWebRecorderWritesAndSessionThrottles(): void
     {
+        $this->setServer(['REQUEST_METHOD' => 'GET']);
         $this->login(2);
         $r = new WebRecorder($this->container);
         $this->assertTrue($r->record(1000));
@@ -40,6 +48,14 @@ class WriteHooksTest extends Base
         $this->assertFalse($r->record(1010));
         $this->assertNull($this->row(2));
         $this->assertTrue($r->record(1031));
+    }
+
+    public function testWebRecorderSkipsNonWebBootstrap(): void
+    {
+        $this->setServer(['argv' => []]); // queue worker: JobHandler logs the job author in, then fires app.bootstrap under CLI
+        $this->login(2);
+        $this->assertFalse((new WebRecorder($this->container))->record(1000));
+        $this->assertNull($this->row(2));
     }
 
     public function testApiMiddlewareRecordsPersonalTokenUser(): void
