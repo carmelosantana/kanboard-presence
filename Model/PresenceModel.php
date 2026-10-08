@@ -2,9 +2,11 @@
 namespace Kanboard\Plugin\Presence\Model;
 
 use Kanboard\Core\Base;
+use PicoDb\SQLException;
 
 // One row per user, updated in place. Throttles are conditional UPDATEs (portable across
-// SQLite/MySQL/Postgres); first sight INSERTs and swallows a racing duplicate.
+// SQLite/MySQL/Postgres); first sight INSERTs; a racing duplicate
+// comes back as insert() === false. Genuine SQL errors are logged, not thrown.
 class PresenceModel extends Base
 {
     const TABLE = 'presence';
@@ -35,23 +37,26 @@ class PresenceModel extends Base
             $params = [$now, $source, $userId, $now - $throttle];
         }
 
-        $stmt = $this->db->execute($sql, $params);
-        if ($stmt !== false && $stmt->rowCount() > 0) {
-            return true;
-        }
-        if ($this->db->table(self::TABLE)->eq('user_id', $userId)->exists()) {
-            return false; // throttled
-        }
-
         try {
+            $stmt = $this->db->execute($sql, $params);
+            if ($stmt !== false && $stmt->rowCount() > 0) {
+                return true;
+            }
+            if ($this->db->table(self::TABLE)->eq('user_id', $userId)->exists()) {
+                return false; // throttled
+            }
+
+            // A racing first write is a duplicate key, which PicoDb reports as insert() === false.
             return (bool) $this->db->table(self::TABLE)->insert([
                 'user_id' => $userId,
                 'last_seen' => $now,
                 'last_beat' => $beat ? $now : 0,
                 'source' => $source,
             ]);
-        } catch (\Exception $e) {
-            return false; // concurrent first write won the race
+        } catch (SQLException $e) {
+            // Real SQL failure (missing table, lost connection): log it, never break the page.
+            $this->logger->error('Presence: '.$e->getMessage());
+            return false;
         }
     }
 }

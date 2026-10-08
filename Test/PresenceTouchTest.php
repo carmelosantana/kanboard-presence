@@ -82,4 +82,15 @@ class PresenceTouchTest extends Base
         $this->assertFalse($this->m->touch(0, 'api', false, 1000));
         $this->assertSame(0, $this->container['db']->table('presence')->count());
     }
+
+    public function testSqlFailureIsLoggedNotThrown(): void
+    {
+        $logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+        $logger->expects($this->once())->method('error')->with($this->stringStartsWith('Presence: '));
+        $this->container['logger'] = $logger;
+        $this->m = new PresenceModel($this->container);
+        $this->container['db']->getConnection()->exec('DROP TABLE presence');
+
+        $this->assertFalse($this->m->touch(1, 'web', false, 1000));
+    }
 }
