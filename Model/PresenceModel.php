@@ -59,4 +59,59 @@ class PresenceModel extends Base
             return false;
         }
     }
+
+    public function state(?array $row, bool $isBot, bool $hidden, int $now): string
+    {
+        if ($row === null || $hidden) {
+            return 'offline';
+        }
+        if ($isBot) {
+            return (int) $row['last_seen'] >= $now - self::AGENT_WINDOW ? 'online' : 'offline';
+        }
+        if ((int) $row['last_beat'] >= $now - self::ONLINE_WINDOW) {
+            return 'online';
+        }
+        return (int) $row['last_seen'] >= $now - self::AWAY_WINDOW ? 'away' : 'offline';
+    }
+
+    public function lineup(int $projectId, int $viewerId, ?int $now = null, ?AgentDetector $agents = null): array
+    {
+        $now = $now ?? time();
+        $ids = array_map('intval', array_keys($this->projectUserRoleModel->getAllUsers($projectId)));
+        if ($ids === []) {
+            return [];
+        }
+
+        $users = $this->db->table('users')
+            ->columns('id', 'username', 'name', 'email', 'avatar_path')
+            ->in('id', $ids)->eq('is_active', 1)->findAll();
+        $activeIds = array_map('intval', array_column($users, 'id'));
+        $rows = [];
+        foreach ($this->db->table(self::TABLE)->in('user_id', $activeIds ?: [0])->findAll() as $r) {
+            $rows[(int) $r['user_id']] = $r;
+        }
+        $bots = array_flip(($agents ?? new AgentDetector($this->container))->agentIds($activeIds));
+        $hidden = array_flip(array_map('intval', $this->db->table('user_has_metadata')
+            ->in('user_id', $activeIds ?: [0])->eq('name', PresenceSettings::META_HIDDEN)->eq('value', '1')
+            ->findAllByColumn('user_id')));
+
+        $order = ['online' => 0, 'away' => 1, 'offline' => 2];
+        $out = [];
+        foreach ($users as $u) {
+            $id = (int) $u['id'];
+            $isBot = isset($bots[$id]);
+            $out[] = [
+                'user_id' => $id,
+                'name' => $u['name'] !== '' && $u['name'] !== null ? $u['name'] : $u['username'],
+                'username' => $u['username'],
+                'email' => (string) $u['email'],
+                'avatar_path' => (string) $u['avatar_path'],
+                'state' => $this->state($rows[$id] ?? null, $isBot, isset($hidden[$id]), $now),
+                'is_bot' => $isBot,
+                'is_self' => $id === $viewerId,
+            ];
+        }
+        usort($out, fn ($a, $b) => [$order[$a['state']], strtolower($a['name'])] <=> [$order[$b['state']], strtolower($b['name'])]);
+        return $out;
+    }
 }
