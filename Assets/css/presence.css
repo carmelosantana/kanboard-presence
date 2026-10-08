@@ -1,5 +1,7 @@
 .presence-strip { display: inline-flex; gap: 4px; align-items: center; margin: 4px 0 0 8px; vertical-align: middle; }
 .presence-plate { position: relative; display: inline-block; border-radius: 50%; line-height: 0; }
+/* The avatar inside carries its own title (name only); let hover land on the plate, whose title has the state. */
+.presence-plate > * { pointer-events: none; }
 .presence-plate::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--presence-ring, #fff); }
 .presence-plate[data-presence="online"]::after { background: #2fb344; }
 .presence-plate[data-presence="away"]::after { background: #f2a01b; }

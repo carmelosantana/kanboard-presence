@@ -43,6 +43,14 @@ class TemplatesTest extends Base
         $this->assertStringContainsString('data-self="1"', $html);
     }
 
+    public function testPlateIsAnAccessibleImageNamedWithItsState(): void
+    {
+        $html = $this->hook('template:project:header:after', ['project' => ['id' => $this->pid]]);
+        $this->assertStringContainsString('role="img"', $html);
+        $this->assertStringContainsString('aria-label="admin — offline"', $html);
+        $this->assertStringContainsString('title="admin — offline"', $html);
+    }
+
     public function testMountRendersOnLayoutBottomWithoutInlineScript(): void
     {
         $html = $this->hook('template:layout:bottom');
