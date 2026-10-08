@@ -111,7 +111,7 @@ class PresenceModel extends Base
                 'is_self' => $id === $viewerId,
             ];
         }
-        usort($out, fn ($a, $b) => [$order[$a['state']], strtolower($a['name'])] <=> [$order[$b['state']], strtolower($b['name'])]);
+        usort($out, fn ($a, $b) => [$order[$a['state']], mb_strtolower($a['name'])] <=> [$order[$b['state']], mb_strtolower($b['name'])]);
         return $out;
     }
 }

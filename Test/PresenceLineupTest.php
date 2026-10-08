@@ -104,6 +104,18 @@ class PresenceLineupTest extends Base
         $this->assertSame(1, $det->calls);
     }
 
+    public function testNamesSortCaseInsensitivelyBeyondAscii(): void
+    {
+        $users = new UserModel($this->container);
+        $eva = $users->create(['username' => 'eva', 'name' => 'Éva']);
+        $edo = $users->create(['username' => 'edo', 'name' => 'édouard']);
+        $roles = new ProjectUserRoleModel($this->container);
+        $roles->addUser($this->pid, $eva, Role::PROJECT_MEMBER);
+        $roles->addUser($this->pid, $edo, Role::PROJECT_MEMBER);
+        $ids = array_column($this->m->lineup($this->pid, 2, self::NOW, new FakeAgentDetector($this->container)), 'user_id');
+        $this->assertLessThan(array_search($eva, $ids, true), array_search($edo, $ids, true), 'édouard sorts before Éva');
+    }
+
     public function testHiddenUserReadsOfflineEvenWithFreshRow(): void
     {
         $this->put(2, 1, 1);
