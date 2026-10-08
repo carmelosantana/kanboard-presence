@@ -7,6 +7,7 @@ use Kanboard\Plugin\Presence\Model\PresenceModel;
 use Kanboard\Plugin\Presence\Model\PresenceSettings;
 
 // POST presence/beat — one call per visible tab per minute: records the heartbeat and returns the lineup.
+// With idle=1 (no input for 30 min, every 5 min) it records activity only, so the user reads away.
 class HeartbeatController extends BaseController
 {
     public function beat()
@@ -23,7 +24,8 @@ class HeartbeatController extends BaseController
         }
 
         $model = new PresenceModel($this->container);
-        $model->touch($userId, PresenceModel::SOURCE_WEB, true);
+        // An idle tab (no input for 30 min) still counts as activity but is no heartbeat, so it reads away.
+        $model->touch($userId, PresenceModel::SOURCE_WEB, $this->request->getIntegerParam('idle') !== 1);
 
         $members = [];
         if ($projectId > 0) {

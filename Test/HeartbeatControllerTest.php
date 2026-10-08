@@ -32,7 +32,7 @@ class HeartbeatControllerTest extends Base
     private function beat(array $params): array
     {
         $post = $params + ['csrf_token' => $this->container['token']->getReusableCSRFToken()];
-        $get = isset($params['project_id']) ? ['project_id' => $params['project_id']] : ['_' => '1'];
+        $get = array_intersect_key($params, ['project_id' => 1, 'idle' => 1]) ?: ['_' => '1'];
         $this->container['request'] = new \Kanboard\Core\Http\Request($this->container, ['REQUEST_METHOD' => 'POST'], $get, $post, [], []);
         $captured = [];
         $resp = $this->createMock(\Kanboard\Core\Http\Response::class);
@@ -52,6 +52,17 @@ class HeartbeatControllerTest extends Base
         $this->assertTrue($out['members'][0]['is_self']);
         $this->assertStringContainsString('avatar', $out['members'][0]['avatar_html']);
         $this->assertGreaterThan(0, (int) $this->container['db']->table('presence')->eq('user_id', 2)->findOneColumn('last_beat'));
+    }
+
+    public function testIdleBeatRecordsActivityButNotAHeartbeat(): void
+    {
+        $then = time() - 200;
+        $this->container['db']->table('presence')->insert(['user_id' => 2, 'last_seen' => $then, 'last_beat' => $then, 'source' => 'web']);
+        $out = $this->beat(['project_id' => $this->pid, 'idle' => 1]);
+        $row = $this->container['db']->table('presence')->eq('user_id', 2)->findOne();
+        $this->assertSame($then, (int) $row['last_beat'], 'an idle beat is not a heartbeat');
+        $this->assertGreaterThan($then, (int) $row['last_seen'], 'an idle beat still counts as activity');
+        $this->assertSame('away', $out['members'][0]['state']);
     }
 
     public function testBeatWithoutProjectReturnsNoMembers(): void
