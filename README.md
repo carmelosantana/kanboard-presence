@@ -10,7 +10,8 @@ Every project view (board, list, overview, and so on) gets a compact avatar stri
 header, with one small avatar per active project member, direct or through a group. Each avatar has a
 coloured status dot in its lower-right corner: green for online, amber for away, grey for offline.
 Offline avatars are also faded. Your own avatar has a thin outline, and agent users carry a small
-dark `BOT` tag under their avatar. Hover an avatar to see the name and state. Members are listed
+dark `BOT` tag under their avatar. Hover an avatar to see the name and current state (screen readers
+announce the same label); both refresh with every poll. Members are listed
 online first, then away, then offline, and alphabetically within each group.
 
 Presence is global, not per project. A lit avatar means the person is active somewhere in Kanboard;
@@ -27,11 +28,13 @@ Postgres.
 
 | State | Humans | Agents |
 |---|---|---|
-| **online** | a visible tab sent a heartbeat in the last 2 min | an authenticated JSON-RPC call in the last 5 min |
-| **away** | any authenticated web request in the last 15 min | (agents are never away) |
+| **online** | a visible tab with mouse or keyboard input in the last 30 min sent a heartbeat in the last 2 min | an authenticated JSON-RPC call in the last 5 min |
+| **away** | any authenticated web request in the last 15 min, including an idle tab's heartbeat | (agents are never away) |
 | **offline** | anything older, or the user chose "Appear offline" | anything older |
 
-The thresholds are fixed in v1.
+An open tab left alone shows **away** after 30 min with no mouse or keyboard input, and after 2 h it
+stops polling altogether, so the user goes **offline** and their PHP session can expire as usual. The
+next click or key press resumes the heartbeat immediately. The thresholds are fixed in v1.
 
 ## Privacy
 
@@ -79,8 +82,8 @@ detail = {
 }
 ```
 
-`state` is `online`, `away` or `offline`, `is_bot` and `is_self` are booleans, and members arrive in
-the strip's sort order. A listener that lights your own plates:
+`state` is `online`, `away` or `offline`, `is_bot` and `is_self` are booleans, and members arrive
+sorted online → away → offline, then by name. A listener that lights your own plates:
 
 ```js
 document.addEventListener('presence:update', function (e) {
@@ -98,9 +101,11 @@ document.addEventListener('presence:update', function (e) {
   most requests never touch the database. API activity is recorded at most once a minute per user,
   through a conditional `UPDATE`. Heartbeat writes are throttled at 30 s.
 - The heartbeat is one POST per visible tab every 60 s, and it returns the lineup in the same
-  response. It pauses while the tab is hidden, beats again when the tab becomes visible, and backs
-  off to every 5 min after 30 min with no mouse or keyboard input.
-- Each lineup is one query for the presence rows plus one batch lookup for agents.
+  response. It pauses while the tab is hidden and beats again when the tab becomes visible. After 30 min
+  with no mouse or keyboard input it slows to every 5 min and marks those beats idle (activity only, no
+  heartbeat); after 2 h it stops until the next input. It also stops for good on a 401/403 response
+  or when the admin switch is off.
+- Each lineup is a fixed handful of batched queries, none per member.
 
 ## Development
 
