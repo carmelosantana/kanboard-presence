@@ -12,6 +12,11 @@ class PresenceHelper extends Base
         return $this->userSession->isLogged() && $s->isEnabled() && ! $s->isHidden($this->userSession->getId());
     }
 
+    public function enabled(): bool
+    {
+        return (new PresenceSettings($this->container))->isEnabled();
+    }
+
     public function hidden(): bool
     {
         return (new PresenceSettings($this->container))->isHidden($this->userSession->getId());
