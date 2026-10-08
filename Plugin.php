@@ -7,6 +7,13 @@ class Plugin extends Base
 {
     public function initialize(): void
     {
+        $this->api->getMiddlewareHandler()->withMiddleware(new Api\PresenceApiMiddleware($this->container));
+    }
+
+    // app.bootstrap: the web session is open here; on API requests the user isn't authenticated yet (middleware handles those).
+    public function onStartup(): void
+    {
+        (new Model\WebRecorder($this->container))->record();
     }
 
     public function getPluginName(): string        { return 'Presence'; }
