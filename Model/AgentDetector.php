@@ -19,6 +19,12 @@ class AgentDetector extends Base
         if ($userIds === [] || ! class_exists($this->class) || ! method_exists($this->class, 'agentIds')) {
             return [];
         }
-        return (new $this->class($this->container))->agentIds($userIds);
+        // Kanboard autoloads every plugin folder but only migrates compatible plugins, so the class can exist without its table.
+        try {
+            return (new $this->class($this->container))->agentIds($userIds);
+        } catch (\PicoDb\SQLException $e) {
+            $this->logger->error('Presence: agent detection failed: '.$e->getMessage());
+            return [];
+        }
     }
 }

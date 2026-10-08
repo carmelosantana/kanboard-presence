@@ -19,6 +19,12 @@ class FakeAgentDetector extends AgentDetector
     public function agentIds(array $userIds): array { $this->calls++; return array_values(array_intersect($userIds, $this->ids)); }
 }
 
+// Stands in for an Agents plugin that is autoloadable but whose schema never ran.
+class UnmigratedAgentTable extends \Kanboard\Core\Base
+{
+    public function agentIds(array $userIds): array { return $this->db->table('agents_missing')->findAllByColumn('agent_user_id'); }
+}
+
 class PresenceLineupTest extends Base
 {
     private PresenceModel $m;
@@ -117,5 +123,13 @@ class PresenceLineupTest extends Base
     public function testDetectorWithoutAgentsPluginReturnsEmpty(): void
     {
         $this->assertSame([], (new AgentDetector($this->container, 'No\\Such\\AgentTable'))->agentIds([1, 2]));
+    }
+
+    public function testDetectorDegradesWhenAgentsTableMissing(): void
+    {
+        $logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+        $logger->expects($this->once())->method('error')->with($this->stringContains('Presence: agent detection failed'));
+        $this->container['logger'] = $logger;
+        $this->assertSame([], (new AgentDetector($this->container, UnmigratedAgentTable::class))->agentIds([1, 2]));
     }
 }

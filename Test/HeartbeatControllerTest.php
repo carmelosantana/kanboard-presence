@@ -19,15 +19,8 @@ class HeartbeatControllerTest extends Base
         parent::setUp();
         require_once __DIR__.'/../Schema/Sqlite.php';
         \Kanboard\Plugin\Presence\Schema\version_1($this->container['db']->getConnection());
-        // The controller uses the real AgentDetector; when Agents is installed beside us, give it its table (as Kanboard's migrations would).
-        $agentsSchema = __DIR__.'/../../Agents/Schema/Sqlite.php';
-        if (is_file($agentsSchema)) {
-            require_once $agentsSchema;
-            $pdo = $this->container['db']->getConnection();
-            for ($v = 1; $v <= \Kanboard\Plugin\Agents\Schema\VERSION; $v++) {
-                ('\\Kanboard\\Plugin\\Agents\\Schema\\version_'.$v)($pdo);
-            }
-        }
+        // Hermetic: if Agents is autoloadable but unmigrated, the detector logs and degrades to no bots.
+        $this->container['logger'] = $this->createMock(\Psr\Log\LoggerInterface::class);
         (new UserModel($this->container))->create(['username' => 'amy', 'name' => 'Amy', 'role' => Role::APP_USER]); // 2
         $this->pid = (new ProjectModel($this->container))->create(['name' => 'Mine']);
         $this->foreign = (new ProjectModel($this->container))->create(['name' => 'Theirs']);
@@ -64,8 +57,10 @@ class HeartbeatControllerTest extends Base
     public function testBeatWithoutProjectReturnsNoMembers(): void
     {
         $out = $this->beat([]);
+        $this->assertTrue($out['enabled']);
         $this->assertNull($out['project_id']);
         $this->assertSame([], $out['members']);
+        $this->assertGreaterThan(0, (int) $this->container['db']->table('presence')->eq('user_id', 2)->findOneColumn('last_beat'));
     }
 
     public function testBeatForForeignProjectIsForbidden(): void
