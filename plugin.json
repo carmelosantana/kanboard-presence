@@ -9,6 +9,6 @@
     "php_version": ">=8.4",
     "requires": [],
     "recommends": [
-        { "plugin": "Agents", "min_version": "0.3.2", "reason": "badges agent users as bots in the presence lineup (human presence works fully without it)" }
+        { "plugin": "Agents", "min_version": "0.3.2", "reason": "badges agent users as bots and lights them on their JSON-RPC calls" }
     ]
 }
