@@ -19,7 +19,7 @@ the strip never reveals which project or page they are looking at.
 
 ## Install
 
-Download `Presence-1.0.0.zip` from the releases page, or install it from ModMenu, and unzip it into
+Download `Presence-1.0.1.zip` from the releases page, or install it from ModMenu, and unzip it into
 `plugins/Presence/` (the zip's single top-level folder is `Presence`). The `presence` table is
 created on first load. Requires Kanboard `>=1.2.47` and PHP `>=8.4`, and works on SQLite, MySQL and
 Postgres.
