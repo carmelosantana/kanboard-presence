@@ -5,7 +5,7 @@ use Kanboard\Controller\BaseController;
 use Kanboard\Plugin\Presence\Model\PresenceSettings;
 
 // The viewer manages only their own flag; user_id is used for layout but writes target the session user.
-class SettingsController extends BaseController
+class PresenceSettingsController extends BaseController
 {
     public function show()
     {
@@ -13,7 +13,7 @@ class SettingsController extends BaseController
         $uid = (int) $this->userSession->getId();
         // The page edits the viewer's own flag, so another user's profile (admins can open any) goes to your own.
         if ((int) $user['id'] !== $uid) {
-            $this->response->redirect($this->helper->url->to('SettingsController', 'show', ['plugin' => 'Presence', 'user_id' => $uid]));
+            $this->response->redirect($this->helper->url->to('PresenceSettingsController', 'show', ['plugin' => 'Presence', 'user_id' => $uid]));
             return;
         }
         $this->response->html($this->helper->layout->user('Presence:user/settings', [
@@ -29,7 +29,7 @@ class SettingsController extends BaseController
         $values = $this->request->getValues();
         (new PresenceSettings($this->container))->setHidden($this->userSession->getId(), ($values['presence_hidden'] ?? '0') === '1');
         $this->flash->success(t('Presence settings saved.'));
-        $this->response->redirect($this->helper->url->to('SettingsController', 'show', ['plugin' => 'Presence', 'user_id' => $this->userSession->getId()]));
+        $this->response->redirect($this->helper->url->to('PresenceSettingsController', 'show', ['plugin' => 'Presence', 'user_id' => $this->userSession->getId()]));
     }
 
     public function toggle()

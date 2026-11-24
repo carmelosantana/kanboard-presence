@@ -12,9 +12,9 @@ class Plugin extends Base
         $this->helper->register('presence', '\Kanboard\Plugin\Presence\Helper\PresenceHelper');
 
         $this->route->addRoute('presence/beat', 'HeartbeatController', 'beat', 'Presence');
-        $this->route->addRoute('presence/settings', 'SettingsController', 'show', 'Presence');
-        $this->route->addRoute('presence/settings/save', 'SettingsController', 'save', 'Presence');
-        $this->route->addRoute('presence/toggle', 'SettingsController', 'toggle', 'Presence');
+        $this->route->addRoute('presence/settings', 'PresenceSettingsController', 'show', 'Presence');
+        $this->route->addRoute('presence/settings/save', 'PresenceSettingsController', 'save', 'Presence');
+        $this->route->addRoute('presence/toggle', 'PresenceSettingsController', 'toggle', 'Presence');
 
         $container = $this->container;
         $this->hook->on('template:project:header:after', [

@@ -92,7 +92,7 @@ class TemplatesTest extends Base
     }
 
     // Mock Response; Request falls back to superglobals for empty arrays, so every array passed is non-empty.
-    private function controller(array $server, array $get, array $post, ?callable $onRedirect = null): \Kanboard\Plugin\Presence\Controller\SettingsController
+    private function controller(array $server, array $get, array $post, ?callable $onRedirect = null): \Kanboard\Plugin\Presence\Controller\PresenceSettingsController
     {
         unset($this->container['request'], $this->container['response']); // core factories freeze once read (e.g. by the url helper)
         $this->container['request'] = new \Kanboard\Core\Http\Request($this->container, $server, $get, $post, [], []);
@@ -101,7 +101,7 @@ class TemplatesTest extends Base
             $resp->method('redirect')->willReturnCallback($onRedirect);
         }
         $this->container['response'] = $resp;
-        return new \Kanboard\Plugin\Presence\Controller\SettingsController($this->container);
+        return new \Kanboard\Plugin\Presence\Controller\PresenceSettingsController($this->container);
     }
 
     private function toggleWithReferer(string $referer): string
