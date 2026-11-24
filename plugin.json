@@ -1,7 +1,7 @@
 {
     "name": "Presence",
     "description": "See which project members are online, away or offline — with agent users badged as bots. Privacy-first: opt-out per user, admin off switch, no activity history.",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "author": "Carmelo Santana",
     "homepage": "https://github.com/carmelosantana/kanboard-presence",
     "license": "MIT",
